@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Tax Calculator</title>
+		<!-- Bootstrap CSS -->
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+		<style>
+			body { padding-top: 4rem; }
+			.card { max-width: 640px; margin: 0 auto; }
+			.result { font-size: 1.25rem; }
+		</style>
+	</head>
+	<body>
+		<main class="container">
+			<div class="card shadow-sm">
+				<div class="card-body">
+					<h1 class="card-title h4 mb-3">Tax Calculator</h1>
+
+					<form id="taxForm" class="row g-3" novalidate>
+						<div class="col-12">
+							<label for="price" class="form-label">Price (before tax)</label>
+							<div class="input-group">
+								<span class="input-group-text">$</span>
+								<input type="number" step="0.01" min="0" class="form-control" id="price" placeholder="0.00" required>
+							</div>
+							<div class="invalid-feedback">Please enter a valid price (0 or greater).</div>
+						</div>
+
+						<div class="col-12 col-md-6">
+							<label for="taxPercent" class="form-label">Tax percentage</label>
+							<div class="input-group">
+								<input type="number" step="0.01" min="0" class="form-control" id="taxPercent" value="6.00" required>
+								<span class="input-group-text">%</span>
+							</div>
+							<div class="form-text">Default is 6.00% — you can change this.</div>
+						</div>
+
+						<div class="col-12 col-md-6 d-flex align-items-end">
+							<button type="button" id="calcBtn" class="btn btn-primary w-100">Calculate</button>
+						</div>
+					</form>
+
+					<hr>
+
+					<div id="results" class="mt-3">
+						<div class="row">
+							<div class="col-6">Tax amount</div>
+							<div class="col-6 text-end result" id="taxAmount">$0.00</div>
+						</div>
+						<div class="row">
+							<div class="col-6">Total (including tax)</div>
+							<div class="col-6 text-end result fw-bold" id="totalAmount">$0.00</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+
+		<!-- Bootstrap JS (optional for components) -->
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+		<script>
+			// Contract:
+			// - Inputs: price (number >= 0), taxPercent (number >= 0)
+			// - Outputs: taxAmount, totalAmount formatted as currency
+			// - Errors: invalid inputs are reported using form validation
+
+			(function () {
+				const priceEl = document.getElementById('price');
+				const taxEl = document.getElementById('taxPercent');
+				const calcBtn = document.getElementById('calcBtn');
+				const taxAmountEl = document.getElementById('taxAmount');
+				const totalAmountEl = document.getElementById('totalAmount');
+				const form = document.getElementById('taxForm');
+
+				function formatCurrency(value) {
+					return value.toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+				}
+
+				function calculate() {
+					// parse values
+					const price = parseFloat(priceEl.value);
+					const taxPercent = parseFloat(taxEl.value);
+
+					// validation
+					let valid = true;
+					if (isNaN(price) || price < 0) {
+						priceEl.classList.add('is-invalid');
+						valid = false;
+					} else {
+						priceEl.classList.remove('is-invalid');
+					}
+
+					if (isNaN(taxPercent) || taxPercent < 0) {
+						taxEl.classList.add('is-invalid');
+						valid = false;
+					} else {
+						taxEl.classList.remove('is-invalid');
+					}
+
+					if (!valid) return;
+
+					// calculation
+					const taxAmount = Math.round((price * (taxPercent / 100)) * 100) / 100; // round to cents
+					const total = Math.round((price + taxAmount) * 100) / 100;
+
+					taxAmountEl.textContent = formatCurrency(taxAmount);
+					totalAmountEl.textContent = formatCurrency(total);
+				}
+
+				// support Enter key on inputs
+				form.addEventListener('submit', function (e) {
+					e.preventDefault();
+					calculate();
+				});
+
+				calcBtn.addEventListener('click', calculate);
+
+				// live update as user types (debounced)
+				let debounceTimer;
+				[priceEl, taxEl].forEach(el => {
+					el.addEventListener('input', () => {
+						clearTimeout(debounceTimer);
+						debounceTimer = setTimeout(calculate, 350);
+					});
+				});
+
+								// ensure tax input shows two decimals
+								function formatTaxInput() {
+									const raw = parseFloat(taxEl.value);
+									if (!isNaN(raw) && raw >= 0) {
+										// keep two decimals shown in the input
+										taxEl.value = raw.toFixed(2);
+									} else {
+										// default to 6.00 when empty/invalid
+										taxEl.value = '6.00';
+									}
+								}
+
+								// ensure price input shows two decimals (same behavior)
+								function formatPriceInput() {
+									const raw = parseFloat(priceEl.value);
+									if (!isNaN(raw) && raw >= 0) {
+										priceEl.value = raw.toFixed(2);
+									} else {
+										// default to 0.00 when empty/invalid
+										priceEl.value = '0.00';
+									}
+								}
+
+								taxEl.addEventListener('blur', formatTaxInput);
+								priceEl.addEventListener('blur', formatPriceInput);
+
+								// initialize display and format inputs
+								formatPriceInput();
+								formatTaxInput();
+								calculate();
+			})();
+		</script>
+	</body>
+</html>
